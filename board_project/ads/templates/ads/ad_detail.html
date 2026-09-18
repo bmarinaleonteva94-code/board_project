@@ -1,0 +1,41 @@
+{% extends 'ads/base.html' %}
+
+{% block title %}{{ ad.title }}{% endblock %}
+
+{% block content %}
+<article class="card detail">
+    <a href="{% url 'ad_list' %}" class="back">← Назад к списку</a>
+
+    <h1>{{ ad.title }}</h1>
+
+    {% if ad.status != 'approved' %}
+        <div class="alert alert-warning">
+            Статус: {{ ad.get_status_display }} (видно только вам)
+        </div>
+    {% endif %}
+
+    <div class="detail-grid">
+        <div>
+            {% if ad.image %}
+                <img src="{{ ad.image.url }}" alt="{{ ad.title }}" class="detail-img">
+            {% else %}
+                <div class="ad-noimage big">Нет изображения</div>
+            {% endif %}
+        </div>
+        <div>
+            <div class="price big">{{ ad.price_display }}</div>
+            {% if ad.category %}
+                <p><strong>Категория:</strong> {{ ad.category.name }}</p>
+            {% endif %}
+            {% if ad.contact %}
+                <p><strong>Контакт:</strong> {{ ad.contact }}</p>
+            {% endif %}
+            <p><strong>Автор:</strong> {{ ad.author.username }}</p>
+            <p><strong>Опубликовано:</strong> {{ ad.created_at|date:"d.m.Y H:i" }}</p>
+        </div>
+    </div>
+
+    <h2>Описание</h2>
+    <p class="description">{{ ad.description|linebreaks }}</p>
+</article>
+{% endblock %}

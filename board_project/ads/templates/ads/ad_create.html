@@ -1,0 +1,27 @@
+{% extends 'ads/base.html' %}
+
+{% block content %}
+<div class="card">
+    <h1>Разместить объявление</h1>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <div class="error">{{ field.errors|join:", " }}</div>
+                {% endif %}
+                {% if field.help_text %}
+                    <small class="help">{{ field.help_text }}</small>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <p class="hint">После отправки объявление попадёт на модерацию к администратору.</p>
+        <button type="submit" class="btn btn-primary">Отправить на модерацию</button>
+    </form>
+</div>
+{% endblock %}

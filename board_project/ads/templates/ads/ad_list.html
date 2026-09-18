@@ -1,0 +1,55 @@
+{% extends 'ads/base.html' %}
+
+{% block content %}
+<form method="get" class="filters">
+    <input type="text" name="q" value="{{ q }}" placeholder="Поиск по объявлениям..." class="form-input">
+    <select name="category" class="form-input" onchange="this.form.submit()">
+        <option value="">Все категории</option>
+        {% for c in categories %}
+            <option value="{{ c.slug }}" {% if c.slug == current_category %}selected{% endif %}>
+                {{ c.name }}
+            </option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary">Найти</button>
+</form>
+
+{% if page_obj.object_list %}
+    <div class="ads-grid">
+        {% for ad in page_obj %}
+            <a href="{% url 'ad_detail' ad.pk %}" class="ad-card">
+                {% if ad.image %}
+                    <img src="{{ ad.image.url }}" alt="{{ ad.title }}">
+                {% else %}
+                    <div class="ad-noimage">Нет фото</div>
+                {% endif %}
+                <div class="ad-body">
+                    {% if ad.category %}
+                        <span class="cat">{{ ad.category.name }}</span>
+                    {% endif %}
+                    <h3>{{ ad.title }}</h3>
+                    <div class="price">{{ ad.price_display }}</div>
+                    <p class="desc">{{ ad.description|truncatechars:100 }}</p>
+                    <div class="meta">
+                        👤 {{ ad.author.username }} · {{ ad.created_at|date:"d.m.Y H:i" }}
+                    </div>
+                </div>
+            </a>
+        {% endfor %}
+    </div>
+
+    {% if page_obj.has_other_pages %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}">←</a>
+            {% endif %}
+            <span>Стр. {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}">→</a>
+            {% endif %}
+        </div>
+    {% endif %}
+{% else %}
+    <div class="empty">Объявлений пока нет 😕</div>
+{% endif %}
+{% endblock %}
