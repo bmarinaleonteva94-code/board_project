@@ -1,55 +1,58 @@
 {% extends 'ads/base.html' %}
 
 {% block content %}
-<form method="get" class="filters">
-    <input type="text" name="q" value="{{ q }}" placeholder="Поиск по объявлениям..." class="form-input">
-    <select name="category" class="form-input" onchange="this.form.submit()">
-        <option value="">Все категории</option>
-        {% for c in categories %}
-            <option value="{{ c.slug }}" {% if c.slug == current_category %}selected{% endif %}>
-                {{ c.name }}
-            </option>
-        {% endfor %}
-    </select>
-    <button type="submit" class="btn btn-primary">Найти</button>
-</form>
+{% include 'ads/_filters.html' %}
 
 {% if page_obj.object_list %}
     <div class="ads-grid">
         {% for ad in page_obj %}
-            <a href="{% url 'ad_detail' ad.pk %}" class="ad-card">
-                {% if ad.image %}
-                    <img src="{{ ad.image.url }}" alt="{{ ad.title }}">
-                {% else %}
-                    <div class="ad-noimage">Нет фото</div>
-                {% endif %}
-                <div class="ad-body">
-                    {% if ad.category %}
-                        <span class="cat">{{ ad.category.name }}</span>
-                    {% endif %}
-                    <h3>{{ ad.title }}</h3>
-                    <div class="price">{{ ad.price_display }}</div>
-                    <p class="desc">{{ ad.description|truncatechars:100 }}</p>
-                    <div class="meta">
-                        👤 {{ ad.author.username }} · {{ ad.created_at|date:"d.m.Y H:i" }}
-                    </div>
-                </div>
-            </a>
+            {% include 'ads/_ad_card.html' %}
         {% endfor %}
     </div>
 
     {% if page_obj.has_other_pages %}
         <div class="pagination">
             {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}">←</a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if query_params %}&{{ query_params }}{% endif %}">← Назад</a>
             {% endif %}
             <span>Стр. {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
             {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}">→</a>
+                <a href="?page={{ page_obj.next_page_number }}{% if query_params %}&{{ query_params }}{% endif %}">Вперёд →</a>
             {% endif %}
         </div>
     {% endif %}
 {% else %}
-    <div class="empty">Объявлений пока нет 😕</div>
+    <div class="empty">
+        <p>😕 Ничего не найдено</p>
+        {% if has_filters %}
+            <p><a href="{% url 'ad_list' %}">Сбросить фильтры</a></p>
+        {% endif %}
+    </div>
 {% endif %}
+
+<script>
+// Живые подсказки поиска
+const input = document.getElementById('searchInput');
+const box = document.getElementById('suggestBox');
+let timer;
+
+input?.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 2) { box.innerHTML = ''; box.classList.remove('open'); return; }
+    timer = setTimeout(async () => {
+        const res = await fetch(`/suggest/?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        if (!data.results.length) { box.classList.remove('open'); return; }
+        box.innerHTML = data.results
+            .map(r => `<a href="${r.url}" class="suggest-item">${r.title}</a>`)
+            .join('');
+        box.classList.add('open');
+    }, 200);
+});
+
+document.addEventListener('click', e => {
+    if (!box?.contains(e.target) && e.target !== input) box?.classList.remove('open');
+});
+</script>
 {% endblock %}

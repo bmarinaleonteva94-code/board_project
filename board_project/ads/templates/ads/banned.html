@@ -1,0 +1,61 @@
+{% extends 'ads/base.html' %}
+
+{% block title %}Аккаунт заблокирован{% endblock %}
+
+{% block content %}
+<div class="card banned-card">
+    <div class="banned-icon">🚫</div>
+    <h1>Аккаунт заблокирован</h1>
+
+    {% if profile %}
+        <p class="banned-text">
+            Ваш аккаунт <strong>{{ user.username }}</strong> был заблокирован модератором.
+        </p>
+
+        {% if profile.ban_reason %}
+            <div class="ban-reason">
+                <div class="ban-reason-label">Причина:</div>
+                <div class="ban-reason-text">{{ profile.ban_reason }}</div>
+            </div>
+        {% endif %}
+
+        <div class="ban-meta">
+            {% if profile.banned_at %}
+                <div>
+                    <span class="meta-label">📅 Дата блокировки:</span>
+                    {{ profile.banned_at|date:"d.m.Y H:i" }}
+                </div>
+            {% endif %}
+            {% if profile.banned_by %}
+                <div>
+                    <span class="meta-label">👤 Заблокировал:</span>
+                    {{ profile.banned_by.username }}
+                </div>
+            {% endif %}
+        </div>
+
+        <p class="banned-hint">
+            Если вы считаете блокировку ошибочной — свяжитесь с администрацией
+            сайта, указав свой логин.
+        </p>
+
+        <div class="banned-actions">
+            <form method="post" action="{% url 'logout' %}" style="display:inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Выйти из аккаунта</button>
+            </form>
+            <a href="{% url 'ad_list' %}" class="btn">← На главную</a>
+        </div>
+    {% else %}
+        <p class="banned-text">
+            Доступ к этому разделу ограничен.
+        </p>
+        <div class="banned-actions">
+            <a href="{% url 'ad_list' %}" class="btn btn-primary">На главную</a>
+            {% if not user.is_authenticated %}
+                <a href="{% url 'login' %}" class="btn">Войти</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

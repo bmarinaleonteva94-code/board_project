@@ -1,0 +1,18 @@
+<a href="{% url 'ad_detail' ad.pk %}" class="ad-card">
+    {% if ad.image %}
+        <img src="{{ ad.image.url }}" alt="{{ ad.title }}" loading="lazy">
+    {% else %}
+        <div class="ad-noimage">Нет фото</div>
+    {% endif %}
+    <div class="ad-body">
+        {% if ad.category %}
+            <span class="cat">{{ ad.category.icon }} {{ ad.category.name }}</span>
+        {% endif %}
+        <h3>{{ ad.title }}</h3>
+        <div class="price">{{ ad.price_display }}</div>
+        <p class="desc">{{ ad.description|truncatechars:90 }}</p>
+        <div class="meta">
+            👤 {{ ad.author.username }} · {{ ad.created_at|date:"d.m.Y H:i" }}
+        </div>
+    </div>
+</a>

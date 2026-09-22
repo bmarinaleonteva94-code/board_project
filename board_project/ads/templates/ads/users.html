@@ -1,0 +1,204 @@
+{% extends 'ads/base.html' %}
+
+{% block title %}Пользователи — Модерация{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="row-between">
+        <h1>👥 Пользователи</h1>
+        <a href="{% url 'moderation_queue' %}" class="btn">← К модерации</a>
+    </div>
+
+    <!-- Поиск -->
+    <form method="get" class="filters">
+        <input type="text" name="q" value="{{ q }}"
+               placeholder="🔍 Поиск по логину или email..."
+               class="form-input" autocomplete="off">
+        <button type="submit" class="btn btn-primary">Найти</button>
+        {% if q %}
+            <a href="{% url 'users_list' %}" class="btn">Сбросить</a>
+        {% endif %}
+    </form>
+
+    <!-- Статистика -->
+    <div class="stats">
+        <div class="stat">
+            <div class="num">{{ page_obj.paginator.count }}</div>
+            <div class="lbl">{% if q %}Найдено{% else %}Всего{% endif %}</div>
+        </div>
+        <div class="stat">
+            <div class="num">{{ banned_count }}</div>
+            <div class="lbl">🚫 Забанено</div>
+        </div>
+    </div>
+
+    {% if page_obj.object_list %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Логин</th>
+                    <th>Email</th>
+                    <th>Объявлений</th>
+                    <th>Роль</th>
+                    <th>Статус</th>
+                    <th>Регистрация</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for u in page_obj %}
+                <tr id="user-row-{{ u.id }}"
+                    {% if u.profile.is_banned %}style="background:#fff5f5"{% endif %}>
+                    <td>{{ u.id }}</td>
+                    <td>
+                        <strong>{{ u.username }}</strong>
+                        {% if u.first_name or u.last_name %}
+                            <br><small style="color:#777">{{ u.first_name }} {{ u.last_name }}</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ u.email|default:"—" }}</td>
+                    <td>
+                        <a href="{% url 'moderation_queue' %}?status=all&q={{ u.username }}"
+                           title="Показать объявления">
+                            {{ u.ad_count }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if u.is_superuser %}
+                            <span class="status status-approved">👑 Суперюзер</span>
+                        {% elif u.is_staff %}
+                            <span class="status status-pending">🛠 Модератор</span>
+                        {% else %}
+                            <span class="status">👤 Пользователь</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.profile.is_banned %}
+                            <span class="status status-rejected">🚫 Забанен</span>
+                            {% if u.profile.ban_reason %}
+                                <br><small style="color:#c0392b"
+                                          title="{{ u.profile.ban_reason }}">
+                                    {{ u.profile.ban_reason|truncatechars:40 }}
+                                </small>
+                            {% endif %}
+                            {% if u.profile.banned_at %}
+                                <br><small style="color:#999">
+                                    {{ u.profile.banned_at|date:"d.m.Y H:i" }}
+                                </small>
+                            {% endif %}
+                        {% else %}
+                            <span class="status status-approved">✅ Активен</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <small>{{ u.date_joined|date:"d.m.Y" }}</small><br>
+                        <small style="color:#999">
+                            {{ u.last_login|date:"d.m.Y H:i"|default:"—" }}
+                        </small>
+                    </td>
+                    <td style="white-space:nowrap">
+                        {% if u.is_staff or u.is_superuser %}
+                            <span style="color:#999;font-size:13px">—</span>
+                        {% elif u.profile.is_banned %}
+                            <form method="post"
+                                  action="{% url 'ban_user' u.id %}"
+                                  style="display:inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="unban">
+                                <button type="submit" class="btn btn-sm btn-success"
+                                        onclick="return confirm('Разбанить {{ u.username }}?')">
+                                    ✅ Разбанить
+                                </button>
+                            </form>
+                        {% else %}
+                            <button type="button"
+                                    class="btn btn-sm btn-danger ban-btn"
+                                    data-user-id="{{ u.id }}"
+                                    data-username="{{ u.username }}">
+                                🚫 Забанить
+                            </button>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Пагинация -->
+        {% if page_obj.has_other_pages %}
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}">
+                        ← Назад
+                    </a>
+                {% endif %}
+                <span>Стр. {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}">
+                        Вперёд →
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="empty">
+            <p>😕 Пользователи не найдены</p>
+            {% if q %}
+                <p><a href="{% url 'users_list' %}">Показать всех</a></p>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Модалка бана -->
+<div id="banModal" class="modal hidden">
+    <div class="modal-content">
+        <h3>🚫 Забанить пользователя <span id="banUser" class="ban-user-name"></span>?</h3>
+        <p style="color:#777;font-size:14px;margin-bottom:14px">
+            Все объявления пользователя будут сняты с публикации.
+            Пользователь потеряет доступ к сайту.
+        </p>
+        <form method="post" id="banForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="ban">
+            <div class="form-group">
+                <label for="banReason">Причина бана <small>(видна пользователю)</small></label>
+                <textarea name="reason" id="banReason" rows="3"
+                          placeholder="Например: спам, мошенничество, оскорбления..."
+                          class="form-input"></textarea>
+            </div>
+            <div class="row-between">
+                <button type="submit" class="btn btn-danger">🚫 Забанить</button>
+                <button type="button" class="btn" onclick="closeBan()">Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.ban-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const modal = document.getElementById('banModal');
+        document.getElementById('banUser').textContent = btn.dataset.username;
+        document.getElementById('banForm').action =
+            `/moderation/users/${btn.dataset.userId}/ban/`;
+        document.getElementById('banReason').value = '';
+        modal.classList.remove('hidden');
+        setTimeout(() => document.getElementById('banReason').focus(), 50);
+    });
+});
+
+function closeBan() {
+    document.getElementById('banModal').classList.add('hidden');
+}
+
+// Закрытие по Esc и клику вне окна
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeBan();
+});
+document.getElementById('banModal')?.addEventListener('click', e => {
+    if (e.target.id === 'banModal') closeBan();
+});
+</script>
+{% endblock %}

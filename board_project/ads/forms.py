@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Ad
+from .models import Ad, Category
 
 
 class AdForm(forms.ModelForm):
@@ -40,3 +40,41 @@ class RegisterForm(UserCreationForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.update({'class': 'form-input'})
+
+
+SORT_CHOICES = [
+    ('-created_at', 'Сначала новые'),
+    ('created_at', 'Сначала старые'),
+    ('price', 'Цена: по возрастанию'),
+    ('-price', 'Цена: по убыванию'),
+]
+
+
+class AdSearchForm(forms.Form):
+    q = forms.CharField(
+        required=False, label='Поиск',
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Поиск по заголовку, описанию, контакту...',
+            'class': 'form-input',
+        })
+    )
+    category = forms.ModelMultipleChoiceField(
+        queryset=Category.objects.all(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'cat-checkbox'}),
+        label='Категории',
+    )
+    min_price = forms.DecimalField(
+        required=False, min_value=0, label='Цена от',
+        widget=forms.NumberInput(attrs={'placeholder': 'от', 'class': 'form-input'})
+    )
+    max_price = forms.DecimalField(
+        required=False, min_value=0, label='Цена до',
+        widget=forms.NumberInput(attrs={'placeholder': 'до', 'class': 'form-input'})
+    )
+    sort = forms.ChoiceField(
+        required=False, choices=SORT_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-input'})
+    )
+    only_free = forms.BooleanField(required=False, label='Только бесплатные')
+    has_photo = forms.BooleanField(required=False, label='Только с фото')

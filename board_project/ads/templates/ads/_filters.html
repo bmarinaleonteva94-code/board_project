@@ -1,0 +1,57 @@
+<form method="get" class="filters-panel" id="filtersForm">
+    <div class="filters-row">
+        <div class="search-wrap">
+            <input type="text" name="q" value="{{ form.q.value|default:'' }}"
+                   placeholder="🔍 Поиск по заголовку, описанию, контакту..."
+                   class="form-input" autocomplete="off" id="searchInput">
+            <div class="suggest-box" id="suggestBox"></div>
+        </div>
+        <select name="sort" class="form-input" onchange="this.form.submit()">
+            {% for value, label in form.fields.sort.choices %}
+                <option value="{{ value }}" {% if form.sort.value == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="filters-row">
+        <input type="number" name="min_price" value="{{ form.min_price.value|default:'' }}"
+               placeholder="Цена от" class="form-input" min="0">
+        <input type="number" name="max_price" value="{{ form.max_price.value|default:'' }}"
+               placeholder="Цена до" class="form-input" min="0">
+        <label class="checkbox-label">
+            <input type="checkbox" name="only_free" {% if form.only_free.value %}checked{% endif %}>
+            Только бесплатные
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" name="has_photo" {% if form.has_photo.value %}checked{% endif %}>
+            Только с фото
+        </label>
+    </div>
+
+    <details class="cat-filter" {% if request.GET.category %}open{% endif %}>
+        <summary>
+            📂 Категории
+            {% if request.GET.category %}<span class="badge">{{ request.GET.category|length }}</span>{% endif %}
+        </summary>
+        <div class="cat-grid">
+            {% for cat in categories %}
+                <label class="cat-item">
+                    <input type="checkbox" name="category" value="{{ cat.pk }}"
+                           {% if cat.pk|stringformat:"s" in request.GET.getlist|join:"," %}checked{% endif %}>
+                    <span>{{ cat.icon }} {{ cat.name }}</span>
+                    <span class="count">{{ cat.cnt }}</span>
+                </label>
+            {% endfor %}
+        </div>
+    </details>
+
+    <div class="filters-actions">
+        <button type="submit" class="btn btn-primary">Применить</button>
+        {% if has_filters %}
+            <a href="{% url 'ad_list' %}" class="btn">Сбросить</a>
+        {% endif %}
+        <span class="results-count">Найдено: <strong>{{ total_count }}</strong></span>
+    </div>
+</form>
