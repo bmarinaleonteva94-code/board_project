@@ -54,7 +54,7 @@ def ad_list(request):
     paginator = Paginator(ads, 12)
     page = paginator.get_page(request.GET.get('page'))
 
-    # Сохраняем GET-параметры без page — для пагинации
+
     params = request.GET.copy()
     params.pop('page', None)
 
@@ -143,11 +143,6 @@ def logout_view(request):
     return redirect('ad_list')
 
 
-def banned_view(request):
-    profile = getattr(request.user, 'profile', None) if request.user.is_authenticated else None
-    return render(request, 'ads/banned.html', {'profile': profile})
-
-
 # ============================================
 # КАБИНЕТ
 # ============================================
@@ -185,7 +180,7 @@ def ad_delete(request, pk):
 
 
 # ============================================
-# МОДЕРАЦИЯ (staff)
+# МОДЕРАЦИЯ 
 # ============================================
 def is_moderator(user):
     return user.is_authenticated and user.is_staff
